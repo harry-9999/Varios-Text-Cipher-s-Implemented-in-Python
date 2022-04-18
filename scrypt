@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+import os
+import sys
+import struct
+import random
+import string
+from string import ascii_uppercase as l
+from itertools import cycle, islice
+from ctypes import c_ulong
+from functools import reduce
+
+def ulong(i): return c_ulong(i).value
+
+def sdbm_hash(s):
+  return reduce(lambda h,c: ulong(ord(c) + (h << 6) + (h << 16) - h), s, 0)
+
+def generate_lck(password, n):
+  a  = 1103515245 
+  c = 12345 
+  m = 256
+
+  seed = sdbm_hash(password) # Generate seed by hashing pwd
+  keystream_blist = []
+ 
+  x_value = seed
+  i = 0
+  while(i<n):
+    x_value = (a * x_value + c) % m
+    keystream_blist.append( x_value )
+    ##("i: "+ str(i)+ " value: "+ str(x_value))
+    i = i+1
+  return keystream_blist
+
+def scrypt(n, keystream_blist, file_blist, output_file):
+  i = 0
+  f = open(output_file, "wb")
+  for i in range(n):
+    key_byte = keystream_blist[i]
+    file_byte = int.from_bytes(file_blist[i], "big")
+    v = key_byte ^ file_byte
+    f.write(v.to_bytes(1, 'big'))   
+  return
+
+password = str(sys.argv[1])
+f1_blist = []
+file = open(str(sys.argv[2]), 'rb')
+while True:
+  byte = file.read(1)
+  if not byte:
+    break
+  f1_blist.append(bytes(byte))
+file.close()
+l = len(f1_blist)
+keystream_blist = generate_lck(password, l)
+scrypt(l,keystream_blist,f1_blist,str(sys.argv[3]))
+print("program complete!")
+

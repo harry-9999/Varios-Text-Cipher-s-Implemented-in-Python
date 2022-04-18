@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+import os
+import sys
+import struct
+import random
+import string
+from string import ascii_uppercase as l
+from itertools import cycle, islice
+from ctypes import c_ulong
+from functools import reduce
+
+
+# Repeats keystream to desired length
+def rep(lst, m):
+    return list(islice(cycle(lst), m))
+
+# Generates Vigenere table grid
+def make_table():
+  l = list(range(0, 256))
+  table = [l[i:]+l[:i] for i in range(len(l))]
+  return table
+
+
+# Encrypts cipher
+def vencrypt(keystream, plaintext, ciphertext_file ):
+  table = make_table()
+  c = 0
+  f = open(ciphertext_file, "wb")
+  for c in range(len(plaintext)):
+    #print("c = ", c)
+    n = int.from_bytes(plaintext[c], "big") 
+    i = int.from_bytes(keystream[c], "big") 
+    f.write(table[n][i].to_bytes(1, 'big'))
+  f.close()
+  return
+
+
+key_blist = []
+file = open(str(sys.argv[1]), 'rb')
+while True:
+  byte = file.read(1)
+  if not byte:
+    break
+  key_blist.append(bytes(byte))
+file.close()
+
+ciphertext_blist = []
+file2 = open(str(sys.argv[2]), 'rb')
+while True:
+  byte = file2.read(1)
+  if not byte:
+    break
+  ciphertext_blist.append(bytes(byte))
+file2.close()
+
+keystream = rep(key_blist, len(ciphertext_blist) )
+vencrypt(keystream, ciphertext_blist, str(sys.argv[3]))
+print("program complete!")
+
